@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 import { cookies } from "next/headers";
+import Providers from "@/app/providers";
 
 export const metadata: Metadata = {
   title: {
@@ -17,14 +18,16 @@ export const metadata: Metadata = {
 
 type Theme = "light" | "dark";
 
-export default async function RootLayout({ children }:{children:React.ReactNode} ) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get("theme")?.value;
   const theme: Theme = themeCookie === "dark" ? "dark" : "light";
 
   return (
     <html lang="ja" className={theme === "dark" ? "dark" : undefined}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

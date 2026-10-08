@@ -31,3 +31,78 @@ export type MyRequestListResponse = {
   totalElements: number;
   totalPages: number;
 };
+
+// リクエストDTO
+// 対象API：
+// POST /api/request-submissions
+// Idempotency-Key: <unique-key>
+export type CreateRequestSubmissionItemRequest = {
+  productName: string;
+  modelNumber: string | null;
+  productUrl: string | null;
+  categoryId: string;
+  quantity: number;
+  plannedUnitPrice: number;
+};
+export type CreateRequestSubmissionRequest = {
+  title: string;
+  reason: string;
+  desiredDeliveryDate: string;
+  requestedSupplierId: string;
+  note: string | null;
+  items: CreateRequestSubmissionItemRequest[];
+};
+
+// レスポンスDTO
+// 対象API：
+// POST /api/request-submissions
+export type RequestSubmissionResponse = {
+  requestId: string;
+  requestNumber: string;
+  status: "SUBMITTED";
+  version: number;
+  submittedAt: string;
+};
+
+// リクエストDTO
+// 対象API:
+// POST /api/requests
+export type CreateDraftRequestItemRequest = {
+  productName: string | null;
+  modelNumber: string | null;
+  productUrl: string | null;
+  categoryId: string | null;
+  quantity: number | null;
+  plannedUnitPrice: number | null;
+};
+
+// リクエストDTO
+// 対象API:
+// POST /api/requests
+export type CreateDraftRequest = {
+  title: string | null;
+  reason: string | null;
+  desiredDeliveryDate: string | null;
+  requestedSupplierId: string | null;
+  note: string | null;
+  items: CreateDraftRequestItemRequest[];
+};
+
+// レスポンスDTO
+// 対象API:
+// POST /api/requests
+export type DraftRequestResponse = {
+  requestId: string;
+  requestNumber: null;
+  status: "DRAFT";
+  title: string | null;
+  reason: string | null;
+  desiredDeliveryDate: string | null;
+  requestedSupplierId: string | null;
+  note: string | null;
+  items: CreateDraftRequestItemRequest[];
+  totalAmount: number;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};

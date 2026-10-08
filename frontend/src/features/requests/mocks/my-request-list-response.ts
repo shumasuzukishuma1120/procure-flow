@@ -11,7 +11,7 @@ const draftRequest = {
   totalAmount: 0,
   updatedAt: "2026-09-22T10:30:00+09:00",
   version: 1,
-} satisfies MyRequestListItemResponse
+} satisfies MyRequestListItemResponse;
 
 const submittedRequest = {
   requestId: "02b3006f-4df1-431e-8f21-0538da91389e",

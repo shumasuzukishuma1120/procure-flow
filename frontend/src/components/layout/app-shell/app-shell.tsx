@@ -10,7 +10,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
 
   return (
     <AppSidebarLayout user={user}>
-      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
         <header className="h-20 shrink-0 shadow-sm">
           <div className="border h-full flex items-center justify-between px-5 gap-3">
             <div className="flex items-center gap-5">

@@ -15,9 +15,9 @@ export default async function AppSidebarLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false"
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    <SidebarProvider defaultOpen={defaultOpen} className="h-svh min-h-0 overflow-hidden">
       <AppSidebar user={user} />
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="min-h-0 overflow-hidden">{children}</SidebarInset>
     </SidebarProvider>
   );
 }
