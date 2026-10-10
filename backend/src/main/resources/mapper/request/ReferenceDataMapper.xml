@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.request.infrastructure.ReferenceDataMapper">
+
+    <select id="existsActiveSupplier" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM suppliers
+            WHERE id = #{supplierId}
+              AND active = TRUE
+        )
+    </select>
+
+    <select id="findActiveCategoryIds" resultType="java.util.UUID">
+        SELECT id
+        FROM categories
+        WHERE active = TRUE
+          AND id IN
+          <foreach collection="categoryIds" item="categoryId" open="(" separator="," close=")">
+              #{categoryId}
+          </foreach>
+    </select>
+
+</mapper>

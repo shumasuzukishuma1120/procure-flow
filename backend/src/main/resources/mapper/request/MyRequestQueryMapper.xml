@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.request.infrastructure.MyRequestQueryMapper">
+
+    <sql id="searchConditions">
+        pr.applicant_id = #{criteria.applicantId}
+        <if test="criteria.status != null">
+            AND pr.status = #{criteria.status}
+        </if>
+        <if test="criteria.keyword != null">
+            AND (
+                pr.request_number ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                OR pr.title ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                OR EXISTS (
+                    SELECT 1
+                    FROM request_items searched_item
+                    WHERE searched_item.request_id = pr.id
+                      AND (
+                          searched_item.product_name ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                          OR searched_item.model_number ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                      )
+                )
+            )
+        </if>
+        <if test="criteria.createdFrom != null">
+            AND pr.created_at &gt;= #{criteria.createdFrom}
+        </if>
+        <if test="criteria.createdToExclusive != null">
+            AND pr.created_at &lt; #{criteria.createdToExclusive}
+        </if>
+        <if test="criteria.categoryId != null">
+            AND EXISTS (
+                SELECT 1
+                FROM request_items category_item
+                WHERE category_item.request_id = pr.id
+                  AND category_item.category_id = #{criteria.categoryId}
+            )
+        </if>
+        <if test="criteria.supplierId != null">
+            AND pr.requested_supplier_id = #{criteria.supplierId}
+        </if>
+    </sql>
+
+    <select id="findAll" resultType="com.example.procureflow.request.infrastructure.MyRequestListItemRow">
+        SELECT
+            pr.id AS request_id,
+            pr.request_number,
+            pr.title,
+            pr.status,
+            item_summary.first_item_name,
+            item_summary.additional_item_count,
+            COALESCE(pr.requested_supplier_name_snapshot, supplier.name) AS requested_supplier_name,
+            item_summary.total_amount,
+            pr.updated_at,
+            pr.version
+        FROM purchase_requests pr
+        LEFT JOIN suppliers supplier
+          ON supplier.id = pr.requested_supplier_id
+        LEFT JOIN LATERAL (
+            SELECT
+                MAX(item.product_name) FILTER (WHERE item.line_number = 1) AS first_item_name,
+                GREATEST(COUNT(*) - 1, 0)::INTEGER AS additional_item_count,
+                COALESCE(
+                    SUM(
+                        COALESCE(item.quantity, 0)::BIGINT
+                        * COALESCE(item.planned_unit_price, 0)
+                    ),
+                    0
+                )::BIGINT AS total_amount
+            FROM request_items item
+            WHERE item.request_id = pr.id
+        ) item_summary ON TRUE
+        WHERE <include refid="searchConditions"/>
+        <choose>
+            <when test="criteria.sort == @com.example.procureflow.request.application.MyRequestSort@UPDATED_ASC">
+                ORDER BY pr.updated_at ASC, pr.id ASC
+            </when>
+            <when test="criteria.sort == @com.example.procureflow.request.application.MyRequestSort@CREATED_DESC">
+                ORDER BY pr.created_at DESC, pr.id DESC
+            </when>
+            <when test="criteria.sort == @com.example.procureflow.request.application.MyRequestSort@CREATED_ASC">
+                ORDER BY pr.created_at ASC, pr.id ASC
+            </when>
+            <otherwise>
+                ORDER BY pr.updated_at DESC, pr.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{criteria.limit}
+        OFFSET #{criteria.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM purchase_requests pr
+        WHERE <include refid="searchConditions"/>
+    </select>
+
+</mapper>

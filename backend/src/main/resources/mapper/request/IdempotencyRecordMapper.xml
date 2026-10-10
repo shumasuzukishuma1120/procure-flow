@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.request.infrastructure.IdempotencyRecordMapper">
+
+    <insert id="insertProcessingIfAbsent">
+        INSERT INTO idempotency_records (
+            id,
+            user_id,
+            operation_type,
+            idempotency_key,
+            request_hash,
+            processing_status,
+            created_at,
+            expires_at
+        ) VALUES (
+            #{id},
+            #{userId},
+            #{operationType},
+            #{idempotencyKey},
+            #{requestHash},
+            'PROCESSING',
+            #{createdAt},
+            #{expiresAt}
+        )
+        ON CONFLICT (user_id, operation_type, idempotency_key) DO NOTHING
+    </insert>
+
+    <select id="find"
+            resultType="com.example.procureflow.request.infrastructure.IdempotencyRecord">
+        SELECT
+            request_hash,
+            processing_status,
+            response_status,
+            response_body::text AS response_body
+        FROM idempotency_records
+        WHERE user_id = #{userId}
+          AND operation_type = #{operationType}
+          AND idempotency_key = #{idempotencyKey}
+    </select>
+
+    <update id="complete">
+        UPDATE idempotency_records
+        SET processing_status = 'COMPLETED',
+            resource_id = #{resourceId},
+            response_status = #{responseStatus},
+            response_body = CAST(#{responseBody} AS jsonb)
+        WHERE user_id = #{userId}
+          AND operation_type = #{operationType}
+          AND idempotency_key = #{idempotencyKey}
+          AND processing_status = 'PROCESSING'
+    </update>
+
+</mapper>
