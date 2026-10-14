@@ -1,6 +1,8 @@
 spring:
   application:
     name: procure-flow-backend
+  profiles:
+    default: local
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB}
     username: ${POSTGRES_USER}

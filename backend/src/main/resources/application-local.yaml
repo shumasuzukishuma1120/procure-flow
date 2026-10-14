@@ -1,4 +1,8 @@
 spring:
+  config:
+    import:
+      - optional:file:../infra/.env[.properties]
+      - optional:file:./infra/.env[.properties]
   flyway:
     locations:
       - classpath:db/migration
