@@ -64,7 +64,7 @@ export default function SidebarNavigation({ user }: { user: CurrentUser }) {
       </SidebarGroup>
 
       <SidebarGroup className="mb-3">
-        <Separator className={"mb-4"} />
+        <Separator className={"mb-2.25"} />
         <SidebarMenu>
           {utilityNavigationItems.map((item) => {
             const Icon = item.icon;

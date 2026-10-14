@@ -36,4 +36,34 @@
         )
     </insert>
 
+    <select id="findOwnedState"
+            resultType="com.example.procureflow.request.infrastructure.OwnedRequestStateRow">
+        SELECT
+            id,
+            status,
+            version
+        FROM purchase_requests
+        WHERE id = #{requestId}
+          AND applicant_id = #{applicantId}
+    </select>
+
+    <delete id="deleteOwnedDraft">
+        DELETE FROM purchase_requests
+        WHERE id = #{requestId}
+          AND applicant_id = #{applicantId}
+          AND status = 'DRAFT'
+          AND version = #{version}
+    </delete>
+
+    <update id="cancelOwnedSubmitted">
+        UPDATE purchase_requests
+        SET status = 'CANCELED',
+            version = version + 1,
+            updated_at = #{updatedAt}
+        WHERE id = #{requestId}
+          AND applicant_id = #{applicantId}
+          AND status = 'SUBMITTED'
+          AND version = #{version}
+    </update>
+
 </mapper>

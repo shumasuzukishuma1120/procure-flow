@@ -20,7 +20,7 @@ export default function RequestFormActionBar({
     <div
       role="group"
       aria-label="申請操作"
-      className="shrink-0 flex items-center gap-3 border-t bg-background px-4 py-4 shadow-[0_-4px_12px_rgb(0_0_0/0.06)]"
+      className="shrink-0 flex items-center gap-3 border-t bg-background px-4 pt-4  shadow-[0_-4px_12px_rgb(0_0_0/0.06)]"
     >
       <FieldError role="alert">{errorMessage}</FieldError>
       <div className="ml-auto flex gap-3">

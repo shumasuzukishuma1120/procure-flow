@@ -1,3 +1,26 @@
+export const MY_REQUEST_LIST_PAGE_SIZES = [20, 50, 100] as const;
+export type MyRequestListPageSize = (typeof MY_REQUEST_LIST_PAGE_SIZES)[number];
+
+export const MY_REQUEST_SORTS = [
+  "UPDATED_DESC",
+  "UPDATED_ASC",
+  "CREATED_DESC",
+  "CREATED_ASC",
+] as const;
+export type MyRequestSort = (typeof MY_REQUEST_SORTS)[number];
+
+export type MyRequestListQuery = {
+  page: number;
+  size: MyRequestListPageSize;
+  sort: MyRequestSort;
+  status?: RequestStatus;
+  keyword?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  categoryId?: string;
+  supplierId?: string;
+};
+
 export const REQUEST_STATUSES = [
   "DRAFT",
   "SUBMITTED",
@@ -30,6 +53,13 @@ export type MyRequestListResponse = {
   size: number;
   totalElements: number;
   totalPages: number;
+};
+
+export type CancelRequestResponse = {
+  requestId: string;
+  status: "CANCELED";
+  version: number;
+  canceledAt: string;
 };
 
 // リクエストDTO

@@ -23,10 +23,10 @@ export default async function AppShell({ children }: { children: React.ReactNode
             <HeaderProfile user={user} />
           </div>
         </header>
-        <div className="p-2">
+        <div className="py-3 px-4">
           <AppBreadcrumb />
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 pt-2">{children}</div>
       </div>
     </AppSidebarLayout>
   );

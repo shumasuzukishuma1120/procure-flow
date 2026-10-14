@@ -46,7 +46,7 @@ export default function AppBreadcrumb() {
                 </BreadcrumbItem>
               ) : (
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumb.label}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-medium">{breadcrumb.label}</BreadcrumbPage>
                 </BreadcrumbItem>
               )}
             </Fragment>

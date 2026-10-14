@@ -1,29 +1,32 @@
 import type { Metadata } from "next";
-import { myRequestListResponse } from "@/features/requests/mocks/my-request-list-response";
-import MyRequestListTable from "@/features/requests/components/my-request-list-table";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import MyRequestList from "@/features/requests/components/my-request-list";
+import { getActiveCategoryOptions } from "@/features/categories/server/get-active-category-options";
+import { getActiveSupplierOptions } from "@/features/suppliers/server/get-active-supplier-options";
 
 export const metadata: Metadata = {
   title: "自分の申請",
 };
 
-export default function RequestsPage() {
+export default async function RequestsPage() {
+  const [supplierOptions, categoryOptions] = await Promise.all([
+    getActiveSupplierOptions(),
+    getActiveCategoryOptions(),
+  ]);
+
   return (
     <>
-      <div className="flex justify-between mx-5">
-<h2 className="text-lg font-bold">
-  自分の申請一覧
-</h2>
-        <Button
-        variant={"outline"}
-        nativeButton={false}
-        render={<Link href="/requests/new" />}>
-          <Plus aria-hidden="true"/>新規申請を作成
+      <div className="flex justify-between overflow-hidden">
+        <h2 className="text-lg font-bold">自分の申請一覧</h2>
+        <Button variant={"outline"} nativeButton={false} render={<Link href="/requests/new" />}>
+          <Plus aria-hidden="true" />
+          新規申請を作成
         </Button>
       </div>
-      <MyRequestListTable items={myRequestListResponse.items} />
+
+      <MyRequestList supplierOptions={supplierOptions} categoryOptions={categoryOptions} />
     </>
   );
 }

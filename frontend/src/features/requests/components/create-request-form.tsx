@@ -246,7 +246,7 @@ export default function CreateRequestForm({
         noValidate
         aria-busy={isPending}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto px-10 pt-2 pb-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-5">
           <FieldSet disabled={isPending}>
             <FieldLegend className="text-lg">申請内容</FieldLegend>
 

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.request.infrastructure.RequestStatusHistoryMapper">
+
+    <insert id="insert">
+        INSERT INTO request_status_histories (
+            id,
+            request_id,
+            from_status,
+            to_status,
+            request_version,
+            changed_by,
+            actor_role,
+            changed_at
+        ) VALUES (
+            #{id},
+            #{requestId},
+            #{fromStatus},
+            #{toStatus},
+            #{requestVersion},
+            #{changedBy},
+            #{actorRole},
+            #{changedAt}
+        )
+    </insert>
+
+</mapper>
