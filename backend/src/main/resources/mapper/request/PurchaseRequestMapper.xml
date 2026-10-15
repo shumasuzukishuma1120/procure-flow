@@ -36,6 +36,40 @@
         )
     </insert>
 
+    <select id="findOwnedRequest"
+            resultType="com.example.procureflow.request.infrastructure.RequestDetailRow">
+        SELECT
+            id AS request_id,
+            request_number,
+            status,
+            title,
+            reason,
+            desired_delivery_date,
+            requested_supplier_id,
+            note,
+            version,
+            created_at,
+            updated_at
+        FROM purchase_requests
+        WHERE id = #{requestId}
+          AND applicant_id = #{applicantId}
+    </select>
+
+    <update id="updateOwnedDraft">
+        UPDATE purchase_requests
+        SET requested_supplier_id = #{requestedSupplierId},
+            title = #{title},
+            reason = #{reason},
+            desired_delivery_date = #{desiredDeliveryDate},
+            note = #{note},
+            version = version + 1,
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+          AND applicant_id = #{applicantId}
+          AND status = 'DRAFT'
+          AND version = #{expectedVersion}
+    </update>
+
     <select id="findOwnedState"
             resultType="com.example.procureflow.request.infrastructure.OwnedRequestStateRow">
         SELECT

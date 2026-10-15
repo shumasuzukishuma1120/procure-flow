@@ -32,4 +32,28 @@
         )
     </insert>
 
+    <select id="findByRequestId"
+            resultType="com.example.procureflow.request.infrastructure.RequestItemRow">
+        SELECT
+            id,
+            request_id,
+            line_number,
+            product_name,
+            model_number,
+            product_url,
+            category_id,
+            quantity,
+            planned_unit_price,
+            created_at,
+            updated_at
+        FROM request_items
+        WHERE request_id = #{requestId}
+        ORDER BY line_number
+    </select>
+
+    <delete id="deleteByRequestId">
+        DELETE FROM request_items
+        WHERE request_id = #{requestId}
+    </delete>
+
 </mapper>

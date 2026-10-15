@@ -2,16 +2,21 @@ package com.example.procureflow.request.application;
 
 import com.example.procureflow.common.error.ApiException;
 import com.example.procureflow.common.error.ApiFieldError;
+import com.example.procureflow.request.infrastructure.DraftRequestUpdateRow;
 import com.example.procureflow.request.infrastructure.IdempotencyRecord;
 import com.example.procureflow.request.infrastructure.IdempotencyRecordMapper;
+import com.example.procureflow.request.infrastructure.OwnedRequestStateRow;
 import com.example.procureflow.request.infrastructure.PurchaseRequestMapper;
 import com.example.procureflow.request.infrastructure.PurchaseRequestRow;
 import com.example.procureflow.request.infrastructure.ReferenceDataMapper;
+import com.example.procureflow.request.infrastructure.RequestDetailRow;
 import com.example.procureflow.request.infrastructure.RequestItemMapper;
 import com.example.procureflow.request.infrastructure.RequestItemRow;
 import com.example.procureflow.request.presentation.dto.CreateDraftRequest;
 import com.example.procureflow.request.presentation.dto.CreateDraftRequestItem;
 import com.example.procureflow.request.presentation.dto.DraftRequestResponse;
+import com.example.procureflow.request.presentation.dto.RequestItemResponse;
+import com.example.procureflow.request.presentation.dto.UpdateDraftRequest;
 import com.example.procureflow.security.CurrentUser;
 import com.example.procureflow.security.CurrentUserProvider;
 import lombok.RequiredArgsConstructor;
@@ -93,22 +98,7 @@ public class DraftRequestService {
         );
         purchaseRequestMapper.insert(requestRow);
 
-        for (int index = 0; index < normalizedRequest.items().size(); index++) {
-            CreateDraftRequestItem item = normalizedRequest.items().get(index);
-            requestItemMapper.insert(new RequestItemRow(
-                    UUID.randomUUID(),
-                    requestId,
-                    index + 1,
-                    item.productName(),
-                    item.modelNumber(),
-                    item.productUrl(),
-                    item.categoryId(),
-                    item.quantity(),
-                    item.plannedUnitPrice(),
-                    now,
-                    now
-            ));
-        }
+        insertItems(requestId, normalizedRequest.items(), now);
 
         DraftRequestResponse response = new DraftRequestResponse(
                 requestId,
@@ -119,7 +109,7 @@ public class DraftRequestService {
                 normalizedRequest.desiredDeliveryDate(),
                 normalizedRequest.requestedSupplierId(),
                 normalizedRequest.note(),
-                normalizedRequest.items(),
+                toItemResponses(normalizedRequest.items()),
                 calculateTotalAmount(normalizedRequest.items()),
                 0,
                 now,
@@ -139,6 +129,127 @@ public class DraftRequestService {
         }
 
         return response;
+    }
+
+    @Transactional
+    public DraftRequestResponse update(UUID requestId, UpdateDraftRequest request) {
+        CreateDraftRequest normalizedRequest = normalize(new CreateDraftRequest(
+                request.title(),
+                request.reason(),
+                request.desiredDeliveryDate(),
+                request.requestedSupplierId(),
+                request.note(),
+                request.items()
+        ));
+        validateDraftContent(normalizedRequest);
+        validateReferenceData(normalizedRequest);
+
+        CurrentUser currentUser = currentUserProvider.getCurrentUser();
+        RequestDetailRow currentRequest = purchaseRequestMapper.findOwnedRequest(
+                requestId,
+                currentUser.id()
+        );
+        if (currentRequest == null) {
+            throw requestNotFound();
+        }
+
+        Instant now = clock.instant();
+        int updated = purchaseRequestMapper.updateOwnedDraft(new DraftRequestUpdateRow(
+                requestId,
+                currentUser.id(),
+                normalizedRequest.requestedSupplierId(),
+                normalizedRequest.title(),
+                normalizedRequest.reason(),
+                normalizedRequest.desiredDeliveryDate(),
+                normalizedRequest.note(),
+                request.version(),
+                now
+        ));
+        if (updated != 1) {
+            throwUpdateFailure(requestId, currentUser.id(), request.version());
+        }
+
+        requestItemMapper.deleteByRequestId(requestId);
+        insertItems(requestId, normalizedRequest.items(), now);
+
+        return new DraftRequestResponse(
+                requestId,
+                null,
+                "DRAFT",
+                normalizedRequest.title(),
+                normalizedRequest.reason(),
+                normalizedRequest.desiredDeliveryDate(),
+                normalizedRequest.requestedSupplierId(),
+                normalizedRequest.note(),
+                toItemResponses(normalizedRequest.items()),
+                calculateTotalAmount(normalizedRequest.items()),
+                request.version() + 1,
+                currentRequest.createdAt(),
+                now
+        );
+    }
+
+    private void throwUpdateFailure(UUID requestId, UUID applicantId, long expectedVersion) {
+        OwnedRequestStateRow current = purchaseRequestMapper.findOwnedState(requestId, applicantId);
+        if (current == null) {
+            throw requestNotFound();
+        }
+        if (!"DRAFT".equals(current.status())) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "REQUEST_STATUS_CONFLICT",
+                    "下書き状態ではない申請は更新できません。"
+            );
+        }
+        if (current.version() != expectedVersion) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "REQUEST_VERSION_CONFLICT",
+                    "申請が他の操作によって更新されています。再読み込みしてからやり直してください。"
+            );
+        }
+
+        throw new IllegalStateException("Draft request could not be updated.");
+    }
+
+    private ApiException requestNotFound() {
+        return new ApiException(
+                HttpStatus.NOT_FOUND,
+                "REQUEST_NOT_FOUND",
+                "対象の申請が見つかりません。"
+        );
+    }
+
+    private void insertItems(UUID requestId, List<CreateDraftRequestItem> items, Instant now) {
+        for (int index = 0; index < items.size(); index++) {
+            CreateDraftRequestItem item = items.get(index);
+            requestItemMapper.insert(new RequestItemRow(
+                    UUID.randomUUID(),
+                    requestId,
+                    index + 1,
+                    item.productName(),
+                    item.modelNumber(),
+                    item.productUrl(),
+                    item.categoryId(),
+                    item.quantity(),
+                    item.plannedUnitPrice(),
+                    now,
+                    now
+            ));
+        }
+    }
+
+    private List<RequestItemResponse> toItemResponses(List<CreateDraftRequestItem> items) {
+        return items.stream()
+                .map(item -> new RequestItemResponse(
+                        item.productName(),
+                        item.modelNumber(),
+                        item.productUrl(),
+                        item.categoryId(),
+                        item.quantity(),
+                        item.plannedUnitPrice()
+                ))
+                .toList();
     }
 
     private DraftRequestResponse resolveRepeatedRequest(

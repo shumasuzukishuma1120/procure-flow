@@ -14,7 +14,7 @@ public record DraftRequestResponse(
         LocalDate desiredDeliveryDate,
         UUID requestedSupplierId,
         String note,
-        List<CreateDraftRequestItem> items,
+        List<RequestItemResponse> items,
         long totalAmount,
         long version,
         Instant createdAt,
