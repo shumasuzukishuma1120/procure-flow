@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.dashboard.infrastructure.DashboardQueryMapper">
+
+    <sql id="requestSummaryColumns">
+        pr.id AS request_id,
+        pr.request_number,
+        pr.title,
+        pr.status,
+        applicant.display_name AS applicant_name,
+        COALESCE(pr.department_name_snapshot, department.name) AS department_name,
+        pr.desired_delivery_date,
+        COALESCE(item_summary.total_amount, 0)::BIGINT AS total_amount,
+        pr.updated_at
+    </sql>
+
+    <sql id="requestSummaryJoins">
+        JOIN users applicant
+          ON applicant.id = pr.applicant_id
+        JOIN departments department
+          ON department.id = pr.department_id
+        LEFT JOIN LATERAL (
+            SELECT
+                COALESCE(
+                    SUM(
+                        COALESCE(item.quantity, 0)::BIGINT
+                        * COALESCE(item.planned_unit_price, 0)
+                    ),
+                    0
+                )::BIGINT AS total_amount
+            FROM request_items item
+            WHERE item.request_id = pr.id
+        ) item_summary ON TRUE
+    </sql>
+
+    <select id="findMyStatusCounts"
+            resultType="com.example.procureflow.dashboard.infrastructure.DashboardStatusCountRow">
+        SELECT
+            status,
+            COUNT(*)::BIGINT AS count
+        FROM purchase_requests
+        WHERE applicant_id = #{applicantId}
+        GROUP BY status
+        ORDER BY CASE status
+            WHEN 'DRAFT' THEN 1
+            WHEN 'SUBMITTED' THEN 2
+            WHEN 'REAPPLICATION_REQUIRED' THEN 3
+            WHEN 'APPROVED' THEN 4
+            WHEN 'ORDERED' THEN 5
+            WHEN 'COMPLETED' THEN 6
+            WHEN 'REJECTED' THEN 7
+            WHEN 'CANCELED' THEN 8
+            ELSE 99
+        END
+    </select>
+
+    <select id="findRecentMyRequests"
+            resultType="com.example.procureflow.dashboard.infrastructure.DashboardRequestSummaryRow">
+        SELECT
+            <include refid="requestSummaryColumns"/>
+        FROM (
+            SELECT candidate.*
+            FROM purchase_requests candidate
+            WHERE candidate.applicant_id = #{applicantId}
+            ORDER BY candidate.updated_at DESC, candidate.id DESC
+            LIMIT #{limit}
+        ) pr
+        <include refid="requestSummaryJoins"/>
+        ORDER BY pr.updated_at DESC, pr.id DESC
+    </select>
+
+    <select id="findApprovalMetrics"
+            resultType="com.example.procureflow.dashboard.infrastructure.ApprovalDashboardMetricsRow">
+        SELECT
+            COUNT(*)::BIGINT AS pending_count,
+            COUNT(*) FILTER (
+                WHERE pr.desired_delivery_date &lt; #{currentDate}
+            )::BIGINT AS overdue_count
+        FROM purchase_requests pr
+        JOIN approver_department_scopes scope
+          ON scope.department_id = pr.department_id
+         AND scope.user_id = #{approverId}
+        WHERE pr.status = 'SUBMITTED'
+    </select>
+
+    <select id="findOldestPendingApprovals"
+            resultType="com.example.procureflow.dashboard.infrastructure.DashboardRequestSummaryRow">
+        SELECT
+            <include refid="requestSummaryColumns"/>
+        FROM (
+            SELECT candidate.*
+            FROM purchase_requests candidate
+            JOIN approver_department_scopes candidate_scope
+              ON candidate_scope.department_id = candidate.department_id
+             AND candidate_scope.user_id = #{approverId}
+            WHERE candidate.status = 'SUBMITTED'
+            ORDER BY candidate.submitted_at ASC NULLS LAST, candidate.id ASC
+            LIMIT #{limit}
+        ) pr
+        <include refid="requestSummaryJoins"/>
+        ORDER BY pr.submitted_at ASC NULLS LAST, pr.id ASC
+    </select>
+
+    <select id="findPurchaseMetrics"
+            resultType="com.example.procureflow.dashboard.infrastructure.PurchaseDashboardMetricsRow">
+        SELECT
+            COUNT(*) FILTER (WHERE status = 'APPROVED')::BIGINT AS awaiting_order_count,
+            COUNT(*) FILTER (WHERE status = 'ORDERED')::BIGINT AS awaiting_receipt_count
+        FROM purchase_requests
+        WHERE status IN ('APPROVED', 'ORDERED')
+    </select>
+
+    <select id="findUpcomingPurchaseRequests"
+            resultType="com.example.procureflow.dashboard.infrastructure.DashboardRequestSummaryRow">
+        SELECT
+            <include refid="requestSummaryColumns"/>
+        FROM (
+            SELECT candidate.*
+            FROM purchase_requests candidate
+            WHERE candidate.status IN ('APPROVED', 'ORDERED')
+              AND candidate.desired_delivery_date IS NOT NULL
+            ORDER BY
+                candidate.desired_delivery_date ASC,
+                candidate.updated_at ASC,
+                candidate.id ASC
+            LIMIT #{limit}
+        ) pr
+        <include refid="requestSummaryJoins"/>
+        ORDER BY pr.desired_delivery_date ASC, pr.updated_at ASC, pr.id ASC
+    </select>
+
+</mapper>
