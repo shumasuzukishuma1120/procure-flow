@@ -1,5 +1,5 @@
 import { toMyRequestListSearchParams } from "@/features/requests/api/to-my-request-list-search-params";
-import { readApiProblem } from "@/features/requests/api/utils";
+import { readApiProblem } from "@/lib/api/read-api-problem";;
 import type { MyRequestListQuery, MyRequestListResponse } from "@/features/requests/types";
 import { ApiError } from "@/lib/api/api-error";
 

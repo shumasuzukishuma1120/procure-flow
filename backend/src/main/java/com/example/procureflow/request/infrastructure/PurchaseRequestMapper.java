@@ -18,6 +18,10 @@ public interface PurchaseRequestMapper {
 
     int updateOwnedDraft(DraftRequestUpdateRow request);
 
+    int submitOwnedDraft(SubmitDraftUpdateRow request);
+
+    long nextRequestNumberSequence();
+
     OwnedRequestStateRow findOwnedState(
             @Param("requestId") UUID requestId,
             @Param("applicantId") UUID applicantId

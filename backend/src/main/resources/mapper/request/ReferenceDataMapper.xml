@@ -13,6 +13,19 @@
         )
     </select>
 
+    <select id="findActiveSupplierName" resultType="string">
+        SELECT name
+        FROM suppliers
+        WHERE id = #{supplierId}
+          AND active = TRUE
+    </select>
+
+    <select id="findDepartmentName" resultType="string">
+        SELECT name
+        FROM departments
+        WHERE id = #{departmentId}
+    </select>
+
     <select id="findActiveCategoryIds" resultType="java.util.UUID">
         SELECT id
         FROM categories

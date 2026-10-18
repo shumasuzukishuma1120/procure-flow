@@ -70,6 +70,32 @@
           AND version = #{expectedVersion}
     </update>
 
+    <update id="submitOwnedDraft">
+        UPDATE purchase_requests
+        SET request_number = #{requestNumber},
+            submitted_by = #{submittedBy},
+            department_id = #{departmentId},
+            department_name_snapshot = #{departmentNameSnapshot},
+            requested_supplier_id = #{requestedSupplierId},
+            requested_supplier_name_snapshot = #{requestedSupplierNameSnapshot},
+            title = #{title},
+            reason = #{reason},
+            desired_delivery_date = #{desiredDeliveryDate},
+            note = #{note},
+            status = 'SUBMITTED',
+            version = version + 1,
+            submitted_at = #{submittedAt},
+            updated_at = #{submittedAt}
+        WHERE id = #{id}
+          AND applicant_id = #{applicantId}
+          AND status = 'DRAFT'
+          AND version = #{expectedVersion}
+    </update>
+
+    <select id="nextRequestNumberSequence" resultType="long">
+        SELECT nextval('purchase_request_number_seq')
+    </select>
+
     <select id="findOwnedState"
             resultType="com.example.procureflow.request.infrastructure.OwnedRequestStateRow">
         SELECT

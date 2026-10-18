@@ -23,33 +23,12 @@ import { useRouter } from "next/navigation";
 import { toRequestFormFieldPath } from "@/features/requests/forms/to-request-form-field-path";
 import { useCreateDraftRequest } from "@/features/requests/hooks/use-create-draft-request";
 import { toCreateDraftRequest } from "@/features/requests/api/to-create-draft-request";
-
-function hasDraftContent(values: DraftRequestFormValues): boolean {
-  const hasRequestContent = [
-    values.title,
-    values.reason,
-    values.desiredDeliveryDate,
-    values.requestedSupplierId,
-    values.note,
-  ].some((value) => value.trim() !== "");
-
-  const hasRequestItemContent = values.items.some((item) => {
-    const hasTextContent = [
-      item.productName,
-      item.modelNumber,
-      item.productUrl,
-      item.categoryId,
-    ].some((value) => value.trim() !== "");
-
-    const hasNumberContent = item.quantity !== undefined || item.plannedUnitPrice !== undefined;
-
-    return hasTextContent || hasNumberContent;
-  });
-
-  return hasRequestContent || hasRequestItemContent;
-}
-
-type RequestFormValidationIntent = "draft" | "submit";
+import { hasDraftContent } from "@/features/requests/forms/has-draft-content";
+import type {
+  DraftCreationAttempt,
+  RequestFormValidationIntent,
+  SubmissionAttempt,
+} from "@/features/requests/types";
 
 const draftRequestResolver: Resolver<DraftRequestFormValues> = zodResolver(draftRequestFormSchema);
 
@@ -58,15 +37,6 @@ const submitRequestResolver: Resolver<DraftRequestFormValues> = zodResolver<
   unknown,
   DraftRequestFormValues
 >(submitRequestFormSchema);
-
-type SubmissionAttempt = {
-  idempotencyKey: string;
-  requestFingerprint: string;
-};
-type DraftCreationAttempt = {
-  idempotencyKey: string;
-  requestFingerprint: string;
-};
 
 export default function CreateRequestForm({
   supplierOptions,

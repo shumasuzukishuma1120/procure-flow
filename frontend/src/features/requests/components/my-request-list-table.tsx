@@ -54,9 +54,25 @@ export default function MyRequestListTable({ items }: { items: MyRequestListItem
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.requestId}>
-                  <TableCell>{item.requestNumber ?? "未採番"}</TableCell>
-                  <TableCell>{item.title ?? "タイトル未入力"}</TableCell>
+                <TableRow
+                  key={item.requestId}
+                  className="relative cursor-pointer hover:bg-muted/50"
+                >
+                  <TableCell>
+                    <Link
+                      className="absolute inset-0 z-0"
+                      href={`/requests/${encodeURIComponent(item.requestId)}`}
+                    >
+                      <span className="sr-only">
+                        {item.requestNumber ?? "未採番"} {item.title ?? "タイトル未入力"}
+                        の詳細ページを表示
+                      </span>
+                    </Link>
+                    <span className="font-medium ">{item.requestNumber ?? "未採番"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span>{item.title ?? "タイトル未入力"}</span>
+                  </TableCell>
                   <TableCell>
                     <RequestStatusBadge status={item.status} />
                   </TableCell>
@@ -77,25 +93,25 @@ export default function MyRequestListTable({ items }: { items: MyRequestListItem
                   <TableCell>{item.requestedSupplierName ?? "未選択"}</TableCell>
                   <TableCell>{yenFormatter.format(item.totalAmount)}</TableCell>
                   <TableCell>{dateTimeFormatter.format(new Date(item.updatedAt))}</TableCell>
-                  <TableCell>
+                  <TableCell className="relative z-10">
                     <div className="flex items-center justify-end gap-2">
                       {item.status === "DRAFT" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          nativeButton={false}
-                          render={<Link href={`/requests/${item.requestId}/edit`} />}
-                        >
-                          <Pencil aria-hidden="true" />
-                          編集
-                        </Button>
-                      )}
-                      {item.status === "DRAFT" && (
-                        <DeleteDraftRequestDialog
-                          requestId={item.requestId}
-                          requestTitle={item.title}
-                          version={item.version}
-                        />
+                        <>
+                          <Button
+                            variant="outline"
+                            size="default"
+                            nativeButton={false}
+                            render={<Link href={`/requests/${item.requestId}/edit`} />}
+                          >
+                            <Pencil aria-hidden="true" />
+                            編集
+                          </Button>
+                          <DeleteDraftRequestDialog
+                            requestId={item.requestId}
+                            requestTitle={item.title}
+                            version={item.version}
+                          />
+                        </>
                       )}
                       {item.status === "SUBMITTED" && (
                         <CancelSubmittedRequestDialog

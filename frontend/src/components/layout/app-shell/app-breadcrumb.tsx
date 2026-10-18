@@ -8,7 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { type RouteDefinition, routeDefinitions } from "@/config/route";
+import { resolveRouteDefinition, type RouteDefinition } from "@/config/route";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment } from "react";
@@ -23,10 +23,10 @@ export default function AppBreadcrumb() {
   while (true) {
     if (used.has(currentPathname)) break;
     used.add(currentPathname);
-    const item = routeDefinitions.find((route) => route.href === currentPathname);
+    const item = resolveRouteDefinition(currentPathname);
     if (!item) break;
     breadcrumbs.unshift(item);
-    if (!("breadcrumbParentHref" in item)) break;
+    if (!item.breadcrumbParentHref) break;
     currentPathname = item.breadcrumbParentHref;
   }
 
@@ -34,7 +34,7 @@ export default function AppBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         {breadcrumbs.map((breadcrumb, index) => {
-          const isCurrentPage = index + 1 === breadcrumbs.length
+          const isCurrentPage = index + 1 === breadcrumbs.length;
           return (
             <Fragment key={breadcrumb.href}>
               {index !== 0 && <BreadcrumbSeparator />}

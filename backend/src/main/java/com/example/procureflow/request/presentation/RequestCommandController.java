@@ -1,8 +1,11 @@
 package com.example.procureflow.request.presentation;
 
 import com.example.procureflow.request.application.RequestCommandService;
+import com.example.procureflow.request.application.RequestSubmissionService;
 import com.example.procureflow.request.presentation.dto.CancelRequestRequest;
 import com.example.procureflow.request.presentation.dto.CancelRequestResponse;
+import com.example.procureflow.request.presentation.dto.RequestSubmissionResponse;
+import com.example.procureflow.request.presentation.dto.SubmitDraftRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -25,6 +29,7 @@ import java.util.UUID;
 public class RequestCommandController {
 
     private final RequestCommandService requestCommandService;
+    private final RequestSubmissionService requestSubmissionService;
 
     @DeleteMapping("/{requestId}")
     public ResponseEntity<Void> deleteDraft(
@@ -41,5 +46,14 @@ public class RequestCommandController {
             @Valid @RequestBody CancelRequestRequest request
     ) {
         return requestCommandService.cancel(requestId, request);
+    }
+
+    @PostMapping("/{requestId}/submit")
+    public RequestSubmissionResponse submitDraft(
+            @PathVariable UUID requestId,
+            @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody SubmitDraftRequest request
+    ) {
+        return requestSubmissionService.submit(requestId, idempotencyKey, request);
     }
 }

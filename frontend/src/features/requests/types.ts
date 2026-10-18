@@ -121,18 +121,60 @@ export type CreateDraftRequest = {
 // レスポンスDTO
 // 対象API:
 // POST /api/requests
-export type DraftRequestResponse = {
-  requestId: string;
+export type DraftRequestResponse = RequestDetailResponse & {
   requestNumber: null;
   status: "DRAFT";
+};
+
+// レスポンスDTO
+// 対象API:
+// GET /api/requests/{requestId}/edit
+// GET /api/requests/{requestId}
+export type RequestItemResponse = {
+  productName: string | null;
+  modelNumber: string | null;
+  productUrl: string | null;
+  categoryId: string | null;
+  quantity: number | null;
+  plannedUnitPrice: number | null;
+};
+
+// レスポンスDTO
+// 対象API:
+// GET /api/requests/{requestId}/edit
+// GET /api/requests/{requestId}
+export type RequestDetailResponse = {
+  requestId: string;
+  requestNumber: string | null;
+  status: RequestStatus;
   title: string | null;
   reason: string | null;
   desiredDeliveryDate: string | null;
   requestedSupplierId: string | null;
   note: string | null;
-  items: CreateDraftRequestItemRequest[];
+  items: RequestItemResponse[];
   totalAmount: number;
   version: number;
   createdAt: string;
   updatedAt: string;
+};
+
+export type UpdateDraftRequest = CreateDraftRequest & {
+  version: number;
+};
+
+export type RequestFormValidationIntent = "draft" | "submit";
+
+export type SubmissionAttempt = {
+  idempotencyKey: string;
+  requestFingerprint: string;
+};
+
+export type DraftCreationAttempt = {
+  idempotencyKey: string;
+  requestFingerprint: string;
+};
+
+export type SubmitDraftRequest = CreateRequestSubmissionRequest & {
+  version:number;
 };

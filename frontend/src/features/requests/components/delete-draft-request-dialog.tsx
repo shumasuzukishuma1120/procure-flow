@@ -20,12 +20,14 @@ type DeleteDraftRequestDialogProps = {
   requestId: string;
   requestTitle: string | null;
   version: number;
+  onSuccess?: () => void;
 };
 
 export default function DeleteDraftRequestDialog({
   requestId,
   requestTitle,
   version,
+  onSuccess,
 }: DeleteDraftRequestDialogProps) {
   const [open, setOpen] = useState(false);
   const deleteDraftMutation = useDeleteDraftRequest();
@@ -43,14 +45,15 @@ export default function DeleteDraftRequestDialog({
     try {
       await deleteDraftMutation.mutateAsync({ requestId, version });
       setOpen(false);
+      onSuccess?.();
     } catch {
-      // MutationのErrorをDialog内へ表示する。
+      // エラーはdeleteDraftMutation.errorを通じてDialog内に表示する。
     }
   };
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogTrigger render={<Button variant="destructive" size="sm" />}>
+      <AlertDialogTrigger render={<Button variant="destructive" size="default" />}>
         <Trash aria-hidden="true" />
         削除
       </AlertDialogTrigger>
@@ -62,10 +65,7 @@ export default function DeleteDraftRequestDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         {deleteDraftMutation.isError && (
-          <p
-            role="alert"
-            className="rounded-md bg-destructive/10 p-3 text-sm text-destructive"
-          >
+          <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
             {deleteDraftMutation.error.message}
           </p>
         )}
@@ -77,7 +77,7 @@ export default function DeleteDraftRequestDialog({
             disabled={deleteDraftMutation.isPending}
             onClick={(event) => {
               event.preventDefault();
-              void handleConfirm();
+              void handleConfirm(); // Promiseの結果を使わない
             }}
           >
             <Trash aria-hidden="true" />

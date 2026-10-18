@@ -40,6 +40,18 @@ type RequestItemCardProps = {
   onRemove: () => void;
 };
 
+function toOptionalNumber(value: unknown): number | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === "string" && value.trim() === "") {
+    return undefined;
+  }
+
+  return Number(value);
+}
+
 export default function RequestItemCard({
   index,
   categorySelectItems,
@@ -253,9 +265,7 @@ export default function RequestItemCard({
               max={MAX_QUANTITY}
               step={1}
               {...register(`items.${index}.quantity` as const, {
-                setValueAs: (value) => {
-                  return value.trim() === "" ? undefined : Number(value);
-                },
+                setValueAs: toOptionalNumber,
               })}
               aria-invalid={!!quantityError}
               aria-describedby={
@@ -279,9 +289,7 @@ export default function RequestItemCard({
               max={MAX_PLANNED_UNIT_PRICE}
               step={1}
               {...register(`items.${index}.plannedUnitPrice` as const, {
-                setValueAs: (value) => {
-                  return value.trim() === "" ? undefined : Number(value);
-                },
+                setValueAs: toOptionalNumber,
               })}
               aria-invalid={!!plannedUnitPriceError}
               aria-describedby={

@@ -12,5 +12,9 @@ public interface ReferenceDataMapper {
 
     boolean existsActiveSupplier(@Param("supplierId") UUID supplierId);
 
+    String findActiveSupplierName(@Param("supplierId") UUID supplierId);
+
+    String findDepartmentName(@Param("departmentId") UUID departmentId);
+
     List<UUID> findActiveCategoryIds(@Param("categoryIds") Set<UUID> categoryIds);
 }

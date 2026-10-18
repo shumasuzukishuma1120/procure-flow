@@ -1,4 +1,4 @@
-import { readApiProblem } from "@/features/requests/api/utils";
+import { readApiProblem } from "@/lib/api/read-api-problem";;
 import type { CreateDraftRequest, DraftRequestResponse } from "@/features/requests/types";
 import { ApiError } from "@/lib/api/api-error";
 

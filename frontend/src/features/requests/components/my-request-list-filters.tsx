@@ -148,7 +148,7 @@ export default function MyRequestListFilters({
 
       <MyRequestSupplierFilter supplierId={supplierId} supplierOptions={supplierOptions} />
 
-      <div className="flex items-center border rounded-lg justify-baseline w-fit pl-3">
+      <div className="flex h-8 w-fit items-center rounded-lg border pl-3">
         <Label htmlFor="my-request-status-filter">ステータス:</Label>
         <Select
           value={status ?? ALL_STATUSES}
@@ -157,7 +157,7 @@ export default function MyRequestListFilters({
         >
           <SelectTrigger
             id="my-request-status-filter"
-            className="w-fit min-w-15 border-background hover:bg-accent"
+            className="h-full w-fit min-w-15 border-0 py-0 hover:bg-accent"
           >
             <SelectValue className={"font-medium"} placeholder={"ステータスを選択"} />
           </SelectTrigger>

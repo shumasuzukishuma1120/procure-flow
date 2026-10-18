@@ -24,12 +24,14 @@ type CancelSubmittedRequestDialogProps = {
   requestId: string;
   requestTitle: string | null;
   version: number;
+  onSuccess?: () => void;
 };
 
 export default function CancelSubmittedRequestDialog({
   requestId,
   requestTitle,
   version,
+  onSuccess,
 }: CancelSubmittedRequestDialogProps) {
   const reasonId = useId();
   const [open, setOpen] = useState(false);
@@ -63,6 +65,7 @@ export default function CancelSubmittedRequestDialog({
       });
       setOpen(false);
       setReason("");
+      onSuccess?.();
     } catch {
       // MutationのErrorをDialog内へ表示する。
     }
@@ -70,7 +73,7 @@ export default function CancelSubmittedRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
+      <DialogTrigger render={<Button variant="destructive" size="default" />}>
         <EraserIcon aria-hidden="true" />
         取消
       </DialogTrigger>

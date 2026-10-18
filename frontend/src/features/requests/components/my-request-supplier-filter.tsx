@@ -43,7 +43,7 @@ export function MyRequestSupplierFilter({
   };
 
   return (
-    <div className="w-full md:w-72 my-3">
+    <div className="w-full md:w-72">
       <Label htmlFor="my-request-supplier-filter" className="sr-only">
         仕入先
       </Label>

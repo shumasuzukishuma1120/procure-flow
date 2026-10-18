@@ -31,3 +31,29 @@ export const routeDefinitions = [
     breadcrumbParentHref: "/dashboard",
   },
 ] as const satisfies RouteDefinition[];
+
+export function resolveRouteDefinition(pathname: string): RouteDefinition | undefined {
+  const exactMatch = routeDefinitions.find((route) => route.href === pathname);
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const requestEditMatch = pathname.match(/^\/requests\/([^/]+)\/edit$/);
+  if (requestEditMatch) {
+    return {
+      label: "下書き編集",
+      href: pathname,
+      breadcrumbParentHref: `/requests/${requestEditMatch[1]}`,
+    };
+  }
+
+  if (/^\/requests\/[^/]+$/.test(pathname)) {
+    return {
+      label: "申請詳細",
+      href: pathname,
+      breadcrumbParentHref: "/requests",
+    };
+  }
+
+  return undefined;
+}

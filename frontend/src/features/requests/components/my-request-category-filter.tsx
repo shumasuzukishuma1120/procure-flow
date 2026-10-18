@@ -52,14 +52,17 @@ export function MyRequestCategoryFilter({
   };
 
   return (
-    <div className="flex w-full items-center rounded-lg border pl-3 md:w-fit">
+    <div className="flex h-8 w-full items-center rounded-lg border pl-3 md:w-fit">
       <Label htmlFor="my-request-category-filter">カテゴリ:</Label>
       <Select
         items={selectItems}
         value={categoryId ?? ALL_CATEGORIES}
         onValueChange={handleValueChange}
       >
-        <SelectTrigger id="my-request-category-filter" className="w-full border-0 md:w-fit">
+        <SelectTrigger
+          id="my-request-category-filter"
+          className="w-full border-0 py-0 data-[size=default]:h-full md:w-fit"
+        >
           <SelectValue placeholder="カテゴリを選択" />
         </SelectTrigger>
         <SelectContent>
