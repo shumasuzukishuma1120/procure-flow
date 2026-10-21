@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.approval.infrastructure.ApprovalCommandMapper">
+
+    <update id="updateDecision">
+        UPDATE purchase_requests pr
+        SET status = #{decision},
+            version = version + 1,
+            updated_at = #{updatedAt}
+        WHERE pr.id = #{requestId}
+          AND pr.status = 'SUBMITTED'
+          AND pr.version = #{expectedVersion}
+          AND EXISTS (
+              SELECT 1
+              FROM approver_department_scopes scope
+              WHERE scope.user_id = #{approverId}
+                AND scope.department_id = pr.department_id
+          )
+    </update>
+
+    <select id="findScopedState"
+            resultType="com.example.procureflow.approval.infrastructure.ApprovalRequestStateRow">
+        SELECT
+            pr.status,
+            pr.version
+        FROM purchase_requests pr
+        WHERE pr.id = #{requestId}
+          AND EXISTS (
+              SELECT 1
+              FROM approver_department_scopes scope
+              WHERE scope.user_id = #{approverId}
+                AND scope.department_id = pr.department_id
+          )
+    </select>
+
+    <insert id="insertDecision">
+        INSERT INTO request_approval_decisions (
+            id,
+            request_id,
+            approver_id,
+            decision,
+            reason,
+            request_version,
+            decided_at
+        ) VALUES (
+            #{id},
+            #{requestId},
+            #{approverId},
+            #{decision},
+            #{reason},
+            #{requestVersion},
+            #{decidedAt}
+        )
+    </insert>
+
+</mapper>

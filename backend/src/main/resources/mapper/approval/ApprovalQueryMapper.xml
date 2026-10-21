@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.approval.infrastructure.ApprovalQueryMapper">
+
+    <sql id="approvalSearchConditions">
+        pr.status = 'SUBMITTED'
+        AND EXISTS (
+            SELECT 1
+            FROM approver_department_scopes scope
+            WHERE scope.user_id = #{criteria.approverId}
+              AND scope.department_id = pr.department_id
+        )
+        <if test="criteria.keyword != null">
+            AND (
+                pr.request_number ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                OR pr.title ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                OR applicant.display_name ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                OR EXISTS (
+                    SELECT 1
+                    FROM request_items searched_item
+                    WHERE searched_item.request_id = pr.id
+                      AND (
+                          searched_item.product_name ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                          OR searched_item.model_number ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+                      )
+                )
+            )
+        </if>
+        <if test="criteria.submittedFrom != null">
+            AND pr.submitted_at &gt;= #{criteria.submittedFrom}
+        </if>
+        <if test="criteria.submittedToExclusive != null">
+            AND pr.submitted_at &lt; #{criteria.submittedToExclusive}
+        </if>
+        <if test="criteria.departmentId != null">
+            AND pr.department_id = #{criteria.departmentId}
+        </if>
+        <if test="criteria.desiredDeliveryDateBefore != null">
+            AND pr.desired_delivery_date &lt; #{criteria.desiredDeliveryDateBefore}
+        </if>
+    </sql>
+
+    <select id="findAll"
+            resultType="com.example.procureflow.approval.infrastructure.ApprovalListItemRow">
+        SELECT
+            pr.id AS request_id,
+            pr.request_number,
+            pr.title,
+            pr.status,
+            applicant.display_name AS applicant_name,
+            pr.department_id,
+            COALESCE(pr.department_name_snapshot, department.name) AS department_name,
+            COALESCE(pr.requested_supplier_name_snapshot, supplier.name) AS requested_supplier_name,
+            COALESCE(item_summary.total_amount, 0)::BIGINT AS total_amount,
+            pr.desired_delivery_date,
+            pr.submitted_at,
+            pr.version
+        FROM purchase_requests pr
+        JOIN users applicant
+          ON applicant.id = pr.applicant_id
+        JOIN departments department
+          ON department.id = pr.department_id
+        LEFT JOIN suppliers supplier
+          ON supplier.id = pr.requested_supplier_id
+        LEFT JOIN LATERAL (
+            SELECT
+                COALESCE(
+                    SUM(
+                        COALESCE(item.quantity, 0)::BIGINT
+                        * COALESCE(item.planned_unit_price, 0)
+                    ),
+                    0
+                )::BIGINT AS total_amount
+            FROM request_items item
+            WHERE item.request_id = pr.id
+        ) item_summary ON TRUE
+        WHERE <include refid="approvalSearchConditions"/>
+        <choose>
+            <when test="criteria.sort == @com.example.procureflow.approval.application.ApprovalSort@NEWEST">
+                ORDER BY pr.submitted_at DESC NULLS LAST, pr.id DESC
+            </when>
+            <when test="criteria.sort == @com.example.procureflow.approval.application.ApprovalSort@DELIVERY_DATE_ASC">
+                ORDER BY pr.desired_delivery_date ASC NULLS LAST, pr.submitted_at ASC, pr.id ASC
+            </when>
+            <when test="criteria.sort == @com.example.procureflow.approval.application.ApprovalSort@AMOUNT_DESC">
+                ORDER BY item_summary.total_amount DESC, pr.submitted_at ASC, pr.id ASC
+            </when>
+            <otherwise>
+                ORDER BY pr.submitted_at ASC NULLS LAST, pr.id ASC
+            </otherwise>
+        </choose>
+        LIMIT #{criteria.limit}
+        OFFSET #{criteria.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM purchase_requests pr
+        JOIN users applicant
+          ON applicant.id = pr.applicant_id
+        WHERE <include refid="approvalSearchConditions"/>
+    </select>
+
+    <select id="findApproverDepartments"
+            resultType="com.example.procureflow.approval.infrastructure.ApproverDepartmentRow">
+        SELECT
+            department.id,
+            department.name
+        FROM approver_department_scopes scope
+        JOIN departments department
+          ON department.id = scope.department_id
+        WHERE scope.user_id = #{approverId}
+          AND department.active = TRUE
+        ORDER BY department.code, department.id
+    </select>
+
+    <select id="findDetail"
+            resultType="com.example.procureflow.approval.infrastructure.ApprovalDetailRow">
+        SELECT
+            pr.id AS request_id,
+            pr.request_number,
+            pr.status,
+            pr.title,
+            pr.reason,
+            pr.desired_delivery_date,
+            pr.requested_supplier_id,
+            COALESCE(pr.requested_supplier_name_snapshot, supplier.name) AS requested_supplier_name,
+            pr.note,
+            pr.applicant_id,
+            applicant.display_name AS applicant_name,
+            pr.department_id,
+            COALESCE(pr.department_name_snapshot, department.name) AS department_name,
+            pr.version,
+            pr.submitted_at,
+            pr.created_at,
+            pr.updated_at,
+            decision.decision,
+            decision.reason AS decision_reason,
+            decided_by.display_name AS decided_by_name,
+            decision.request_version AS decision_request_version,
+            decision.decided_at
+        FROM purchase_requests pr
+        JOIN users applicant
+          ON applicant.id = pr.applicant_id
+        JOIN departments department
+          ON department.id = pr.department_id
+        LEFT JOIN suppliers supplier
+          ON supplier.id = pr.requested_supplier_id
+        LEFT JOIN request_approval_decisions decision
+          ON decision.request_id = pr.id
+        LEFT JOIN users decided_by
+          ON decided_by.id = decision.approver_id
+        WHERE pr.id = #{requestId}
+          AND pr.status &lt;&gt; 'DRAFT'
+          AND EXISTS (
+              SELECT 1
+              FROM approver_department_scopes scope
+              WHERE scope.user_id = #{approverId}
+                AND scope.department_id = pr.department_id
+          )
+    </select>
+
+    <select id="findItems"
+            resultType="com.example.procureflow.approval.infrastructure.ApprovalItemRow">
+        SELECT
+            item.line_number,
+            item.product_name,
+            item.model_number,
+            item.product_url,
+            item.category_id,
+            category.name AS category_name,
+            item.quantity,
+            item.planned_unit_price
+        FROM request_items item
+        LEFT JOIN categories category
+          ON category.id = item.category_id
+        WHERE item.request_id = #{requestId}
+          AND EXISTS (
+              SELECT 1
+              FROM purchase_requests pr
+              JOIN approver_department_scopes scope
+                ON scope.department_id = pr.department_id
+               AND scope.user_id = #{approverId}
+              WHERE pr.id = item.request_id
+          )
+        ORDER BY item.line_number
+    </select>
+
+</mapper>
