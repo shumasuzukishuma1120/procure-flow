@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.purchase.infrastructure.PurchaseQueryMapper">
+    <sql id="conditions">
+        <choose>
+            <when test="criteria.status != null">pr.status = #{criteria.status}</when>
+            <otherwise>pr.status IN ('APPROVED', 'ORDERED', 'COMPLETED')</otherwise>
+        </choose>
+        <if test="criteria.keyword != null">
+            AND (pr.request_number ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+              OR pr.title ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+              OR applicant.display_name ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'
+              OR EXISTS (SELECT 1 FROM request_items si WHERE si.request_id = pr.id
+                         AND si.product_name ILIKE ('%' || #{criteria.keyword} || '%') ESCAPE '\'))
+        </if>
+        <if test="criteria.departmentId != null">AND pr.department_id = #{criteria.departmentId}</if>
+        <if test="criteria.supplierId != null">
+            AND COALESCE(po.actual_supplier_id, pr.requested_supplier_id) = #{criteria.supplierId}
+        </if>
+        <if test="criteria.approvedFrom != null">
+            AND COALESCE(ad.decided_at, pr.updated_at) &gt;= #{criteria.approvedFrom}
+        </if>
+        <if test="criteria.approvedToExclusive != null">
+            AND COALESCE(ad.decided_at, pr.updated_at) &lt; #{criteria.approvedToExclusive}
+        </if>
+    </sql>
+
+    <select id="findAll" resultType="com.example.procureflow.purchase.infrastructure.PurchaseListItemRow">
+        SELECT pr.id AS request_id, pr.request_number, pr.title, pr.status,
+               applicant.display_name AS applicant_name, pr.department_id,
+               COALESCE(pr.department_name_snapshot, department.name) AS department_name,
+               summary.product_name AS item_summary,
+               GREATEST(summary.item_count - 1, 0)::INTEGER AS additional_item_count,
+               COALESCE(po.actual_supplier_id, pr.requested_supplier_id) AS supplier_id,
+               COALESCE(po.actual_supplier_name_snapshot,
+                        pr.requested_supplier_name_snapshot, supplier.name) AS supplier_name,
+               CASE WHEN po.id IS NULL THEN summary.planned_total ELSE summary.actual_total END AS total_amount,
+               COALESCE(ad.decided_at, pr.updated_at) AS approved_at,
+               pr.desired_delivery_date, pr.version
+        FROM purchase_requests pr
+        JOIN users applicant ON applicant.id = pr.applicant_id
+        JOIN departments department ON department.id = pr.department_id
+        LEFT JOIN suppliers supplier ON supplier.id = pr.requested_supplier_id
+        LEFT JOIN request_approval_decisions ad ON ad.request_id = pr.id AND ad.decision = 'APPROVED'
+        LEFT JOIN purchase_orders po ON po.request_id = pr.id
+        JOIN LATERAL (
+            SELECT (ARRAY_AGG(ri.product_name ORDER BY ri.line_number))[1] AS product_name,
+                   COUNT(*)::INTEGER AS item_count,
+                   SUM(ri.quantity::BIGINT * ri.planned_unit_price)::BIGINT AS planned_total,
+                   SUM(ri.quantity::BIGINT * poi.actual_unit_price)::BIGINT AS actual_total
+            FROM request_items ri
+            LEFT JOIN purchase_order_items poi ON poi.request_item_id = ri.id
+            WHERE ri.request_id = pr.id
+        ) summary ON TRUE
+        WHERE <include refid="conditions"/>
+        <choose>
+            <when test="criteria.sort == @com.example.procureflow.purchase.application.PurchaseSort@APPROVED_AT_ASC">
+                ORDER BY COALESCE(ad.decided_at, pr.updated_at) ASC, pr.id ASC
+            </when>
+            <when test="criteria.sort == @com.example.procureflow.purchase.application.PurchaseSort@APPROVED_AT_DESC">
+                ORDER BY COALESCE(ad.decided_at, pr.updated_at) DESC, pr.id DESC
+            </when>
+            <when test="criteria.sort == @com.example.procureflow.purchase.application.PurchaseSort@AMOUNT_DESC">
+                ORDER BY (CASE WHEN po.id IS NULL THEN summary.planned_total ELSE summary.actual_total END) DESC, pr.id ASC
+            </when>
+            <otherwise>
+                ORDER BY pr.desired_delivery_date ASC NULLS LAST,
+                         COALESCE(ad.decided_at, pr.updated_at) ASC, pr.id ASC
+            </otherwise>
+        </choose>
+        LIMIT #{criteria.limit} OFFSET #{criteria.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM purchase_requests pr
+        JOIN users applicant ON applicant.id = pr.applicant_id
+        LEFT JOIN request_approval_decisions ad ON ad.request_id = pr.id AND ad.decision = 'APPROVED'
+        LEFT JOIN purchase_orders po ON po.request_id = pr.id
+        WHERE <include refid="conditions"/>
+    </select>
+
+    <select id="findDetail" resultType="com.example.procureflow.purchase.infrastructure.PurchaseDetailRow">
+        SELECT pr.id AS request_id, pr.request_number, pr.status, pr.title, pr.reason,
+               pr.desired_delivery_date, pr.note, pr.applicant_id,
+               applicant.display_name AS applicant_name, pr.department_id,
+               COALESCE(pr.department_name_snapshot, department.name) AS department_name,
+               pr.requested_supplier_id,
+               COALESCE(pr.requested_supplier_name_snapshot, requested_supplier.name) AS requested_supplier_name,
+               COALESCE(ad.decided_at, pr.updated_at) AS approved_at,
+               po.id AS purchase_order_id, po.actual_supplier_id,
+               po.actual_supplier_name_snapshot AS actual_supplier_name,
+               po.purchase_order_number, po.promised_delivery_date, po.purchaser_note,
+               ordered_by.display_name AS ordered_by_name, po.ordered_at,
+               receipt.received_date, receipt.receipt_note,
+               received_by.display_name AS received_by_name, receipt.completed_at, pr.version
+        FROM purchase_requests pr
+        JOIN users applicant ON applicant.id = pr.applicant_id
+        JOIN departments department ON department.id = pr.department_id
+        LEFT JOIN suppliers requested_supplier ON requested_supplier.id = pr.requested_supplier_id
+        LEFT JOIN request_approval_decisions ad ON ad.request_id = pr.id AND ad.decision = 'APPROVED'
+        LEFT JOIN purchase_orders po ON po.request_id = pr.id
+        LEFT JOIN users ordered_by ON ordered_by.id = po.ordered_by
+        LEFT JOIN request_receipts receipt ON receipt.purchase_order_id = po.id
+        LEFT JOIN users received_by ON received_by.id = receipt.received_by
+        WHERE pr.id = #{requestId} AND pr.status IN ('APPROVED', 'ORDERED', 'COMPLETED')
+    </select>
+
+    <select id="findItems" resultType="com.example.procureflow.purchase.infrastructure.PurchaseItemRow">
+        SELECT ri.id AS request_item_id, ri.line_number, ri.product_name, ri.model_number,
+               ri.product_url, ri.category_id, category.name AS category_name,
+               ri.quantity, ri.planned_unit_price, poi.actual_unit_price
+        FROM request_items ri
+        LEFT JOIN categories category ON category.id = ri.category_id
+        LEFT JOIN purchase_order_items poi ON poi.request_item_id = ri.id
+        JOIN purchase_requests pr ON pr.id = ri.request_id
+        WHERE ri.request_id = #{requestId} AND pr.status IN ('APPROVED', 'ORDERED', 'COMPLETED')
+        ORDER BY ri.line_number
+    </select>
+
+    <select id="findActiveDepartments"
+            resultType="com.example.procureflow.purchase.presentation.dto.PurchaseDepartmentResponse">
+        SELECT id, name
+        FROM departments
+        WHERE active = TRUE
+        ORDER BY name, id
+    </select>
+</mapper>

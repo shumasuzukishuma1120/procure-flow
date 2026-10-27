@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.purchase.infrastructure.PurchaseCommandMapper">
+    <select id="findState" resultType="com.example.procureflow.purchase.infrastructure.PurchaseStateRow">
+        SELECT pr.status, pr.version, po.id AS purchase_order_id, po.ordered_at
+        FROM purchase_requests pr LEFT JOIN purchase_orders po ON po.request_id = pr.id
+        WHERE pr.id = #{requestId} AND pr.status IN ('APPROVED', 'ORDERED', 'COMPLETED')
+    </select>
+    <select id="findActiveSupplierName" resultType="string">
+        SELECT name FROM suppliers WHERE id = #{supplierId} AND active = TRUE
+    </select>
+    <update id="updateStatus">
+        UPDATE purchase_requests SET status = #{nextStatus}, version = version + 1, updated_at = #{updatedAt}
+        WHERE id = #{requestId} AND status = #{expectedStatus} AND version = #{expectedVersion}
+    </update>
+    <insert id="insertOrder">
+        INSERT INTO purchase_orders (id, request_id, actual_supplier_id,
+            actual_supplier_name_snapshot, purchase_order_number, promised_delivery_date,
+            purchaser_note, ordered_by, ordered_at)
+        VALUES (#{id}, #{requestId}, #{supplierId}, #{supplierName}, #{orderNumber},
+            #{promisedDate}, #{note}, #{orderedBy}, #{orderedAt})
+    </insert>
+    <insert id="insertOrderItems">
+        INSERT INTO purchase_order_items (id, purchase_order_id, request_item_id, actual_unit_price)
+        VALUES
+        <foreach collection="items" item="item" separator=",">
+            (#{item.id}, #{purchaseOrderId}, #{item.requestItemId}, #{item.actualUnitPrice})
+        </foreach>
+    </insert>
+    <insert id="insertReceipt">
+        INSERT INTO request_receipts (id, purchase_order_id, received_date, receipt_note,
+            received_by, completed_at)
+        VALUES (#{id}, #{purchaseOrderId}, #{receivedDate}, #{note}, #{receivedBy}, #{completedAt})
+    </insert>
+</mapper>
