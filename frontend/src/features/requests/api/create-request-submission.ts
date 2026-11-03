@@ -1,4 +1,4 @@
-import { readApiProblem } from "@/lib/api/read-api-problem";;
+import { readApiProblem } from "@/lib/api/read-api-problem";
 import type {
   CreateRequestSubmissionRequest,
   RequestSubmissionResponse,

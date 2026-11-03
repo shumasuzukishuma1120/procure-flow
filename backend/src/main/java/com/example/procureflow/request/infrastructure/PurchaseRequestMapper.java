@@ -11,6 +11,8 @@ public interface PurchaseRequestMapper {
 
     int insert(PurchaseRequestRow request);
 
+    int insertSubmitted(SubmittedRequestCreationRow request);
+
     RequestDetailRow findOwnedRequest(
             @Param("requestId") UUID requestId,
             @Param("applicantId") UUID applicantId

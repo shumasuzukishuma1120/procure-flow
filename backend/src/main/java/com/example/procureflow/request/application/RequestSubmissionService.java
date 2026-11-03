@@ -10,7 +10,9 @@ import com.example.procureflow.request.infrastructure.ReferenceDataMapper;
 import com.example.procureflow.request.infrastructure.RequestItemMapper;
 import com.example.procureflow.request.infrastructure.RequestItemRow;
 import com.example.procureflow.request.infrastructure.RequestStatusHistoryMapper;
+import com.example.procureflow.request.infrastructure.SubmittedRequestCreationRow;
 import com.example.procureflow.request.infrastructure.SubmitDraftUpdateRow;
+import com.example.procureflow.request.presentation.dto.CreateRequestSubmissionRequest;
 import com.example.procureflow.request.presentation.dto.RequestSubmissionResponse;
 import com.example.procureflow.request.presentation.dto.SubmitDraftRequest;
 import com.example.procureflow.request.presentation.dto.SubmitDraftRequestItem;
@@ -44,7 +46,8 @@ public class RequestSubmissionService {
 
     private static final String DRAFT = "DRAFT";
     private static final String SUBMITTED = "SUBMITTED";
-    private static final String OPERATION_TYPE = "SUBMIT_REQUEST";
+    private static final String CREATE_SUBMISSION_OPERATION_TYPE = "CREATE_REQUEST_SUBMISSION";
+    private static final String SUBMIT_DRAFT_OPERATION_TYPE = "SUBMIT_REQUEST";
     private static final Duration IDEMPOTENCY_RETENTION = Duration.ofHours(24);
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Tokyo");
 
@@ -56,6 +59,111 @@ public class RequestSubmissionService {
     private final IdempotencyRecordMapper idempotencyRecordMapper;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+
+    @Transactional
+    public RequestSubmissionResponse create(
+            String idempotencyKey,
+            CreateRequestSubmissionRequest request
+    ) {
+        validateIdempotencyKey(idempotencyKey);
+
+        SubmitDraftRequest normalizedRequest = normalize(new SubmitDraftRequest(
+                request.title(),
+                request.reason(),
+                request.desiredDeliveryDate(),
+                request.requestedSupplierId(),
+                request.note(),
+                request.items(),
+                0L
+        ));
+        CurrentUser currentUser = currentUserProvider.getCurrentUser();
+        String requestHash = calculateRequestHash(normalizedRequest);
+        Instant now = clock.instant();
+
+        int inserted = idempotencyRecordMapper.insertProcessingIfAbsent(
+                UUID.randomUUID(),
+                currentUser.id(),
+                CREATE_SUBMISSION_OPERATION_TYPE,
+                idempotencyKey,
+                requestHash,
+                now,
+                now.plus(IDEMPOTENCY_RETENTION)
+        );
+        if (inserted == 0) {
+            return resolveRepeatedRequest(
+                    currentUser.id(),
+                    CREATE_SUBMISSION_OPERATION_TYPE,
+                    idempotencyKey,
+                    requestHash
+            );
+        }
+
+        ReferenceData referenceData = validateAndLoadReferenceData(normalizedRequest, currentUser);
+        UUID requestId = UUID.randomUUID();
+        long sequence = purchaseRequestMapper.nextRequestNumberSequence();
+        String requestNumber = formatRequestNumber(sequence, now);
+        long initialVersion = 1L;
+
+        int requestInserted = purchaseRequestMapper.insertSubmitted(
+                new SubmittedRequestCreationRow(
+                        requestId,
+                        currentUser.id(),
+                        currentUser.id(),
+                        currentUser.id(),
+                        currentUser.departmentId(),
+                        referenceData.departmentName(),
+                        normalizedRequest.requestedSupplierId(),
+                        referenceData.supplierName(),
+                        requestNumber,
+                        normalizedRequest.title(),
+                        normalizedRequest.reason(),
+                        normalizedRequest.desiredDeliveryDate(),
+                        normalizedRequest.note(),
+                        initialVersion,
+                        now
+                )
+        );
+        if (requestInserted != 1) {
+            throw new IllegalStateException("Submitted request could not be inserted.");
+        }
+
+        insertItems(requestId, normalizedRequest.items(), now);
+
+        int historyInserted = requestStatusHistoryMapper.insert(
+                UUID.randomUUID(),
+                requestId,
+                DRAFT,
+                SUBMITTED,
+                initialVersion,
+                currentUser.id(),
+                "USER",
+                now
+        );
+        if (historyInserted != 1) {
+            throw new IllegalStateException("Request status history could not be inserted.");
+        }
+
+        RequestSubmissionResponse response = new RequestSubmissionResponse(
+                requestId,
+                requestNumber,
+                SUBMITTED,
+                initialVersion,
+                now
+        );
+        int completed = idempotencyRecordMapper.complete(
+                currentUser.id(),
+                CREATE_SUBMISSION_OPERATION_TYPE,
+                idempotencyKey,
+                requestId,
+                HttpStatus.CREATED.value(),
+                writeJson(response)
+        );
+        if (completed != 1) {
+            throw new IllegalStateException("Idempotency record could not be completed.");
+        }
+
+        return response;
+    }
 
     @Transactional
     public RequestSubmissionResponse submit(
@@ -73,14 +181,19 @@ public class RequestSubmissionService {
         int inserted = idempotencyRecordMapper.insertProcessingIfAbsent(
                 UUID.randomUUID(),
                 currentUser.id(),
-                OPERATION_TYPE,
+                SUBMIT_DRAFT_OPERATION_TYPE,
                 idempotencyKey,
                 requestHash,
                 now,
                 now.plus(IDEMPOTENCY_RETENTION)
         );
         if (inserted == 0) {
-            return resolveRepeatedRequest(currentUser.id(), idempotencyKey, requestHash);
+            return resolveRepeatedRequest(
+                    currentUser.id(),
+                    SUBMIT_DRAFT_OPERATION_TYPE,
+                    idempotencyKey,
+                    requestHash
+            );
         }
 
         ReferenceData referenceData = validateAndLoadReferenceData(normalizedRequest, currentUser);
@@ -133,7 +246,7 @@ public class RequestSubmissionService {
         );
         int completed = idempotencyRecordMapper.complete(
                 currentUser.id(),
-                OPERATION_TYPE,
+                SUBMIT_DRAFT_OPERATION_TYPE,
                 idempotencyKey,
                 requestId,
                 HttpStatus.OK.value(),
@@ -251,12 +364,13 @@ public class RequestSubmissionService {
 
     private RequestSubmissionResponse resolveRepeatedRequest(
             UUID userId,
+            String operationType,
             String idempotencyKey,
             String requestHash
     ) {
         IdempotencyRecord record = idempotencyRecordMapper.find(
                 userId,
-                OPERATION_TYPE,
+                operationType,
                 idempotencyKey
         );
         if (record == null) {
@@ -337,10 +451,16 @@ public class RequestSubmissionService {
     }
 
     private String calculateRequestHash(UUID requestId, SubmitDraftRequest request) {
+        return calculatePayloadHash(new SubmissionHashPayload(requestId, request));
+    }
+
+    private String calculateRequestHash(SubmitDraftRequest request) {
+        return calculatePayloadHash(request);
+    }
+
+    private String calculatePayloadHash(Object requestHashPayload) {
         try {
-            byte[] serializedRequest = objectMapper.writeValueAsBytes(
-                    new SubmissionHashPayload(requestId, request)
-            );
+            byte[] serializedRequest = objectMapper.writeValueAsBytes(requestHashPayload);
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(serializedRequest);
             return HexFormat.of().formatHex(hash);
         } catch (JacksonException | NoSuchAlgorithmException exception) {

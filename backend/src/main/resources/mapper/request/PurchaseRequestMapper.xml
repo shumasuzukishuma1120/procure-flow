@@ -36,6 +36,48 @@
         )
     </insert>
 
+    <insert id="insertSubmitted">
+        INSERT INTO purchase_requests (
+            id,
+            applicant_id,
+            created_by,
+            submitted_by,
+            department_id,
+            department_name_snapshot,
+            requested_supplier_id,
+            requested_supplier_name_snapshot,
+            request_number,
+            title,
+            reason,
+            desired_delivery_date,
+            note,
+            status,
+            version,
+            submitted_at,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{id},
+            #{applicantId},
+            #{createdBy},
+            #{submittedBy},
+            #{departmentId},
+            #{departmentNameSnapshot},
+            #{requestedSupplierId},
+            #{requestedSupplierNameSnapshot},
+            #{requestNumber},
+            #{title},
+            #{reason},
+            #{desiredDeliveryDate},
+            #{note},
+            'SUBMITTED',
+            #{version},
+            #{submittedAt},
+            #{submittedAt},
+            #{submittedAt}
+        )
+    </insert>
+
     <select id="findOwnedRequest"
             resultType="com.example.procureflow.request.infrastructure.RequestDetailRow">
         SELECT
