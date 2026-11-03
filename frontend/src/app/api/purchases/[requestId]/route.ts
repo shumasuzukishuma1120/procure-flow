@@ -1,10 +1,12 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 type PurchaseRouteContext = { params: Promise<{ requestId: string }> };
 
 export async function GET(request: Request, { params }: PurchaseRouteContext) {
   const backendApiUrl = process.env.BACKEND_API_URL;
   if (!backendApiUrl) throw new Error("BACKEND_API_URLが設定されていません。");
   const { requestId } = await params;
-  const response = await fetch(
+  const response = await fetchSpringBoot(
     new URL(`/api/purchases/${encodeURIComponent(requestId)}`, backendApiUrl),
     { cache: "no-store", signal: request.signal },
   );

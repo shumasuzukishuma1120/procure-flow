@@ -1,11 +1,17 @@
 package com.example.procureflow.user.infrastructure;
 
-import com.example.procureflow.security.CurrentUser;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.UUID;
 
 @Mapper
 public interface UserMapper {
 
-    CurrentUser findActiveByCognitoSub(@Param("cognitoSub") String cognitoSub);
+    AuthenticatedUserRow findActiveByCognitoSub(@Param("cognitoSub") String cognitoSub);
+
+    int updateCognitoSub(
+            @Param("userId") UUID userId,
+            @Param("cognitoSub") String cognitoSub
+    );
 }

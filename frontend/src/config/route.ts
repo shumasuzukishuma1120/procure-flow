@@ -55,6 +55,14 @@ export function resolveRouteDefinition(pathname: string): RouteDefinition | unde
     };
   }
 
+  if (/^\/approvals\/[^/]+$/.test(pathname)) {
+    return {
+      label: "承認詳細",
+      href: pathname,
+      breadcrumbParentHref: "/approvals",
+    };
+  }
+
   if (/^\/purchases\/[^/]+$/.test(pathname)) {
     return {
       label: "購買詳細",

@@ -5,13 +5,25 @@
 <mapper namespace="com.example.procureflow.user.infrastructure.UserMapper">
 
     <select id="findActiveByCognitoSub"
-            resultType="com.example.procureflow.security.CurrentUser">
+            resultType="com.example.procureflow.user.infrastructure.AuthenticatedUserRow">
         SELECT
-            id,
-            department_id
-        FROM users
-        WHERE cognito_sub = #{cognitoSub}
-          AND active = TRUE
+            u.id,
+            u.department_id,
+            u.employee_number,
+            u.display_name,
+            d.name AS department_name
+        FROM users u
+        INNER JOIN departments d ON d.id = u.department_id
+        WHERE u.cognito_sub = #{cognitoSub}
+          AND u.active = TRUE
+          AND d.active = TRUE
     </select>
+
+    <update id="updateCognitoSub">
+        UPDATE users
+        SET cognito_sub = #{cognitoSub},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{userId}
+    </update>
 
 </mapper>

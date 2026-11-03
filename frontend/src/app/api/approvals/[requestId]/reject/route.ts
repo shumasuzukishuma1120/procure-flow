@@ -1,3 +1,5 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 type ApprovalRouteContext = { params: Promise<{ requestId: string }> };
 
 export async function POST(request: Request, { params }: ApprovalRouteContext) {
@@ -9,7 +11,7 @@ export async function POST(request: Request, { params }: ApprovalRouteContext) {
   const idempotencyKey = request.headers.get("Idempotency-Key");
   if (idempotencyKey !== null) headers.set("Idempotency-Key", idempotencyKey);
 
-  const response = await fetch(
+  const response = await fetchSpringBoot(
     new URL(`/api/approvals/${encodeURIComponent(requestId)}/reject`, backendApiUrl),
     { method: "POST", headers, body: await request.text(), cache: "no-store", signal: request.signal },
   );

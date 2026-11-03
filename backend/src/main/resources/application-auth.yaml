@@ -1,0 +1,10 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_LjXxURnPm}
+
+app:
+  security:
+    cognito-client-id: ${COGNITO_CLIENT_ID:1bmjtq7bdh99329qldljutruli}

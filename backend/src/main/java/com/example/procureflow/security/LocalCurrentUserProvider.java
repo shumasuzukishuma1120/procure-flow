@@ -4,9 +4,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
+import java.util.EnumSet;
 
 @Component
-@Profile("local")
+@Profile("local-no-auth")
 public class LocalCurrentUserProvider implements CurrentUserProvider {
 
     private static final UUID LOCAL_USER_ID =
@@ -16,6 +17,13 @@ public class LocalCurrentUserProvider implements CurrentUserProvider {
 
     @Override
     public CurrentUser getCurrentUser() {
-        return new CurrentUser(LOCAL_USER_ID, LOCAL_DEPARTMENT_ID);
+        return new CurrentUser(
+                LOCAL_USER_ID,
+                LOCAL_DEPARTMENT_ID,
+                "EMP-0001",
+                "田中 啓太郎",
+                "開発部",
+                EnumSet.allOf(UserRole.class)
+        );
     }
 }

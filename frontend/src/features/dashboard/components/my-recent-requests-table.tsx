@@ -43,7 +43,7 @@ export default function MyRecentRequestsTable({ requests }: MyRecentRequestsTabl
       <TableCaption className="sr-only">最近の申請一覧</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead className="hidden w-40 lg:table-cell">申請番号</TableHead>
+          <TableHead className="hidden w-52 lg:table-cell">申請番号</TableHead>
           <TableHead>タイトル</TableHead>
           <TableHead className="w-24">ステータス</TableHead>
           <TableHead className="hidden w-28 md:table-cell">合計金額</TableHead>
@@ -53,8 +53,13 @@ export default function MyRecentRequestsTable({ requests }: MyRecentRequestsTabl
       <TableBody>
         {requests.map((request) => (
           <TableRow key={request.requestId} className="relative cursor-pointer hover:bg-muted/50">
-            <TableCell className="hidden lg:table-cell">
-              <span className="font-medium">{request.requestNumber ?? "未採番"}</span>
+            <TableCell className="hidden max-w-0 lg:table-cell">
+              <span
+                className="block truncate font-medium"
+                title={request.requestNumber ?? "未採番"}
+              >
+                {request.requestNumber ?? "未採番"}
+              </span>
             </TableCell>
             <TableCell className="max-w-0">
               <Link
@@ -62,11 +67,11 @@ export default function MyRecentRequestsTable({ requests }: MyRecentRequestsTabl
                 href={`/requests/${encodeURIComponent(request.requestId)}`}
               >
                 <span className="sr-only">
-                  {request.requestNumber ?? "未採番"} {request.title}
+                  {request.requestNumber ?? "未採番"} {request.title ?? "タイトル未入力"}
                   の詳細ページを表示
                 </span>
               </Link>
-              <span className="block truncate">{request.title}</span>
+              <span className="block truncate">{request.title ?? "タイトル未入力"}</span>
             </TableCell>
             <TableCell>
               <RequestStatusBadge status={request.status} />

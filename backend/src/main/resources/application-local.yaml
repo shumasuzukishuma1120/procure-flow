@@ -7,3 +7,7 @@ spring:
     locations:
       - classpath:db/migration
       - classpath:db/local
+
+app:
+  security:
+    local-cognito-sub: ${LOCAL_COGNITO_SUB:}

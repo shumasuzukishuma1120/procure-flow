@@ -48,12 +48,16 @@ export default function ApprovalsDashboardSection({
               count={dashboard.pendingCount}
               icon={Clock3}
               tone="blue"
+              href="/approvals"
+              aria-label="承認待ちの申請の一覧を表示"
             />
             <DashboardMetric
               label="期限超過"
               count={dashboard.overdueCount}
               icon={TriangleAlert}
               tone="orange"
+              href="/approvals?overdueOnly=true"
+              aria-label="期限超過の一覧を表示"
             />
           </dl>
           <div className="space-y-2">

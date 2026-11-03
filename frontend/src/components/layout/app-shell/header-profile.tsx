@@ -9,8 +9,6 @@ export default function HeaderProfile({ user }: { user: CurrentUser }) {
     <>
       <div className="hidden md:flex items-center gap-2">
         <Avatar>
-          {/* FIXME: AbaterImage取得できそうであれば修正 それまでは通信削減のためコメントアウト */}
-          {/* <AvatarImage src="" /> */}
           <AvatarFallback>
             <User />
           </AvatarFallback>
@@ -38,8 +36,6 @@ export default function HeaderProfile({ user }: { user: CurrentUser }) {
 
       <div className="flex items-center gap-2 md:hidden">
         <Avatar>
-          {/* FIXME: AbaterImage取得できそうであれば修正 それまでは通信削減のためコメントアウト */}
-          {/* <AvatarImage src="" /> */}
           <AvatarFallback>
             <User />
           </AvatarFallback>

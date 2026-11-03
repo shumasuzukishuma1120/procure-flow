@@ -12,6 +12,7 @@ import com.example.procureflow.dashboard.presentation.dto.MyRequestsDashboardRes
 import com.example.procureflow.dashboard.presentation.dto.PurchaseDashboardResponse;
 import com.example.procureflow.security.CurrentUser;
 import com.example.procureflow.security.CurrentUserProvider;
+import com.example.procureflow.security.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,9 +46,27 @@ public class DashboardQueryService {
                         .toList()
         );
 
+        ApprovalDashboardResponse approvals = createApprovalDashboard(
+                currentUser,
+                currentDate
+        );
+
+        PurchaseDashboardResponse purchases = createPurchaseDashboard(currentUser);
+
+        return new DashboardResponse(myRequests, approvals, purchases);
+    }
+
+    private ApprovalDashboardResponse createApprovalDashboard(
+            CurrentUser currentUser,
+            LocalDate currentDate
+    ) {
+        if (!currentUser.hasRole(UserRole.APPROVER)) {
+            return new ApprovalDashboardResponse(0, 0, java.util.List.of());
+        }
+
         ApprovalDashboardMetricsRow approvalMetrics =
                 dashboardQueryMapper.findApprovalMetrics(currentUser.id(), currentDate);
-        ApprovalDashboardResponse approvals = new ApprovalDashboardResponse(
+        return new ApprovalDashboardResponse(
                 approvalMetrics.pendingCount(),
                 approvalMetrics.overdueCount(),
                 dashboardQueryMapper.findOldestPendingApprovals(
@@ -57,18 +76,22 @@ public class DashboardQueryService {
                         .map(this::toSummaryResponse)
                         .toList()
         );
+    }
+
+    private PurchaseDashboardResponse createPurchaseDashboard(CurrentUser currentUser) {
+        if (!currentUser.hasRole(UserRole.PURCHASER)) {
+            return new PurchaseDashboardResponse(0, 0, java.util.List.of());
+        }
 
         PurchaseDashboardMetricsRow purchaseMetrics =
                 dashboardQueryMapper.findPurchaseMetrics();
-        PurchaseDashboardResponse purchases = new PurchaseDashboardResponse(
+        return new PurchaseDashboardResponse(
                 purchaseMetrics.awaitingOrderCount(),
                 purchaseMetrics.awaitingReceiptCount(),
                 dashboardQueryMapper.findUpcomingPurchaseRequests(SUMMARY_LIMIT).stream()
                         .map(this::toSummaryResponse)
                         .toList()
         );
-
-        return new DashboardResponse(myRequests, approvals, purchases);
     }
 
     private DashboardRequestSummaryResponse toSummaryResponse(

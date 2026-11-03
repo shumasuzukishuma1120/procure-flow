@@ -3,6 +3,7 @@ import "server-only";
 import type { RequestDetailResponse } from "@/features/requests/types";
 import { ApiError } from "@/lib/api/api-error";
 import { readApiProblem } from "@/lib/api/read-api-problem";
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
 
 export async function getRequestDetail(requestId: string): Promise<RequestDetailResponse> {
   const backendApiUrl = process.env.BACKEND_API_URL;
@@ -13,7 +14,7 @@ export async function getRequestDetail(requestId: string): Promise<RequestDetail
 
   const requestUrl = new URL(`/api/requests/${encodeURIComponent(requestId)}`, backendApiUrl);
 
-  const response = await fetch(requestUrl, {
+  const response = await fetchSpringBoot(requestUrl, {
     cache: "no-store",
   });
 
@@ -24,5 +25,5 @@ export async function getRequestDetail(requestId: string): Promise<RequestDetail
 
   const data: RequestDetailResponse = await response.json();
 
-  return data
+  return data;
 }

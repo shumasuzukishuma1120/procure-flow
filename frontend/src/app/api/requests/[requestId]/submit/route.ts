@@ -1,3 +1,5 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 type SubmitDraftRequestRouteContext = {
   params: Promise<{ requestId: string }>;
 };
@@ -25,7 +27,7 @@ export async function POST(request: Request, { params }: SubmitDraftRequestRoute
     headers.set("Idempotency-Key", idempotencyKey);
   }
 
-  const response = await fetch(requestUrl, {
+  const response = await fetchSpringBoot(requestUrl, {
     method: "POST",
     headers,
     body: await request.text(),

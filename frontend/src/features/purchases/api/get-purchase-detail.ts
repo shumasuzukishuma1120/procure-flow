@@ -3,11 +3,12 @@ import "server-only";
 import type { PurchaseDetailResponse } from "@/features/purchases/types";
 import { ApiError } from "@/lib/api/api-error";
 import { readApiProblem } from "@/lib/api/read-api-problem";
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
 
 export async function getPurchaseDetail(requestId: string): Promise<PurchaseDetailResponse> {
   const backendApiUrl = process.env.BACKEND_API_URL;
   if (!backendApiUrl) throw new Error("BACKEND_API_URLが設定されていません。");
-  const response = await fetch(
+  const response = await fetchSpringBoot(
     new URL(`/api/purchases/${encodeURIComponent(requestId)}`, backendApiUrl),
     { cache: "no-store" },
   );

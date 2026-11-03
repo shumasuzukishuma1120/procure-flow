@@ -1,3 +1,5 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 export async function GET(request: Request) {
   const backendApiUrl = process.env.BACKEND_API_URL;
   if (!backendApiUrl) {
@@ -9,7 +11,7 @@ export async function GET(request: Request) {
 
   springBootUrl.search = requestUrl.search;
 
-  const response = await fetch(springBootUrl, {
+  const response = await fetchSpringBoot(springBootUrl, {
     cache: "no-store",
     signal: request.signal,
   });

@@ -8,11 +8,11 @@ export type DashboardStatusCount = {
 export type DashboardRequestSummary = {
   requestId: string;
   requestNumber: string | null;
-  title: string;
+  title: string | null;
   status: RequestStatus;
   applicantName: string;
   departmentName: string;
-  desiredDeliveryDate: string;
+  desiredDeliveryDate: string | null;
   totalAmount: number;
   updatedAt: string;
 };

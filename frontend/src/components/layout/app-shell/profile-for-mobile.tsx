@@ -7,8 +7,6 @@ export default function ProfileForMobile({ user }: { user: CurrentUser }) {
   return (
     <div className="flex w-full items-center gap-3 p-3 md:hidden">
       <Avatar size="lg" className={"size-12! shrink-0"}>
-        {/* FIXME */}
-        {/* <AvatarImage src="" /> */}
         <AvatarFallback>
           <User className="object-cover" />
         </AvatarFallback>

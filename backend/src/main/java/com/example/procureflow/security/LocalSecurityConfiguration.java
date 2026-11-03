@@ -8,7 +8,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@Profile("local")
+@Profile("local-no-auth")
 public class LocalSecurityConfiguration {
 
     @Bean

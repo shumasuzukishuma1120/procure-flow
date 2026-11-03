@@ -1,3 +1,5 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 type RequestRouteContext = {
   params: Promise<{ requestId: string }>;
 };
@@ -14,7 +16,7 @@ export async function DELETE(request: Request, { params }: RequestRouteContext) 
   const springBootUrl = new URL(`/api/requests/${encodeURIComponent(requestId)}`, backendApiUrl);
   springBootUrl.search = requestUrl.search;
 
-  const response = await fetch(springBootUrl, {
+  const response = await fetchSpringBoot(springBootUrl, {
     method: "DELETE",
     cache: "no-store",
     signal: request.signal,
@@ -41,7 +43,7 @@ export async function PUT(request: Request, { params }: RequestRouteContext) {
 
   const requestUrl = new URL(`/api/requests/${encodeURIComponent(requestId)}`, backendApiUrl);
 
-  const response = await fetch(requestUrl, {
+  const response = await fetchSpringBoot(requestUrl, {
     method: "PUT",
     headers: {
       "content-type": "application/json",

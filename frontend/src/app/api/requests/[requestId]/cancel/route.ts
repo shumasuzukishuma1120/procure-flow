@@ -1,3 +1,5 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 type CancelRequestRouteContext = {
   params: Promise<{ requestId: string }>;
 };
@@ -15,7 +17,7 @@ export async function POST(request: Request, { params }: CancelRequestRouteConte
     backendApiUrl,
   );
 
-  const response = await fetch(springBootUrl, {
+  const response = await fetchSpringBoot(springBootUrl, {
     method: "POST",
     headers: {
       "content-type": request.headers.get("content-type") ?? "application/json",

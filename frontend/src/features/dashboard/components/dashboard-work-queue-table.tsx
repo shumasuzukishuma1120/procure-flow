@@ -24,7 +24,11 @@ const yenFormatter = new Intl.NumberFormat("ja-JP", {
   maximumFractionDigits: 0,
 });
 
-function formatDateOnly(value: string) {
+function formatDateOnly(value: string | null) {
+  if (value === null) {
+    return "未設定";
+  }
+
   const [year, month, day] = value.split("-");
   return `${year}/${month}/${day}`;
 }
@@ -60,10 +64,13 @@ export default function DashboardWorkQueueTable({
                 className="absolute inset-0 z-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
               >
                 <span className="sr-only">
-                  {request.requestNumber ?? "未採番"} {request.title}の詳細を表示
+                  {request.requestNumber ?? "未採番"} {request.title ?? "タイトル未入力"}
+                  の詳細を表示
                 </span>
               </Link>
-              <span className="block truncate font-medium">{request.title}</span>
+              <span className="block truncate font-medium">
+                {request.title ?? "タイトル未入力"}
+              </span>
               <span className="block truncate text-xs text-muted-foreground">
                 {request.requestNumber ?? "未採番"}
               </span>

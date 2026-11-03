@@ -1,3 +1,5 @@
+import { fetchSpringBoot } from "@/lib/api/server/fetch-spring-boot";
+
 type PurchaseReceiptRouteContext = { params: Promise<{ requestId: string }> };
 
 export async function POST(request: Request, { params }: PurchaseReceiptRouteContext) {
@@ -7,7 +9,7 @@ export async function POST(request: Request, { params }: PurchaseReceiptRouteCon
   const headers = new Headers({ "content-type": "application/json" });
   const idempotencyKey = request.headers.get("Idempotency-Key");
   if (idempotencyKey !== null) headers.set("Idempotency-Key", idempotencyKey);
-  const response = await fetch(
+  const response = await fetchSpringBoot(
     new URL(`/api/purchases/${encodeURIComponent(requestId)}/receipt`, backendApiUrl),
     {
       method: "POST",
