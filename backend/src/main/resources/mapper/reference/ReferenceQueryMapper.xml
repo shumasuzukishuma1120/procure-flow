@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.procureflow.reference.infrastructure.ReferenceQueryMapper">
+    <select id="findActiveCategories" resultType="com.example.procureflow.reference.presentation.dto.ReferenceOptionResponse">
+        SELECT id, name FROM categories WHERE active = TRUE ORDER BY code
+    </select>
+    <select id="findActiveSuppliers" resultType="com.example.procureflow.reference.presentation.dto.ReferenceOptionResponse">
+        SELECT id, name FROM suppliers WHERE active = TRUE ORDER BY code
+    </select>
+</mapper>
