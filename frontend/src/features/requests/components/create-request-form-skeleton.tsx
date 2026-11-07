@@ -11,14 +11,20 @@ function FormFieldSkeleton({ multiline = false }: { multiline?: boolean }) {
   );
 }
 
-export default function CreateRequestFormSkeleton() {
+type CreateRequestFormSkeletonProps = {
+  loadingLabel?: string;
+};
+
+export default function CreateRequestFormSkeleton({
+  loadingLabel = "新規申請フォームを読み込んでいます",
+}: CreateRequestFormSkeletonProps) {
   return (
     <div
       role="status"
-      aria-label="新規申請フォームを読み込んでいます"
+      aria-label={loadingLabel}
       className="flex h-full min-h-0 flex-col overflow-hidden"
     >
-      <span className="sr-only">新規申請フォームを読み込んでいます</span>
+      <span className="sr-only">{loadingLabel}</span>
 
       <div aria-hidden="true" className="min-h-0 flex-1 overflow-y-auto px-3 pb-5">
         <div className="flex flex-col gap-4">

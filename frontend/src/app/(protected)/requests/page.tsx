@@ -3,9 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import MyRequestList from "@/features/requests/components/my-request-list";
-import MyRequestListSkeleton from "@/features/requests/components/my-request-list-skeleton";
+import RequestsPageSkeleton from "@/features/requests/components/requests-page-skeleton";
 import { getActiveCategoryOptions } from "@/features/categories/server/get-active-category-options";
 import { getActiveSupplierOptions } from "@/features/suppliers/server/get-active-supplier-options";
 
@@ -39,18 +38,5 @@ async function RequestsPageContent() {
 
       <MyRequestList supplierOptions={supplierOptions} categoryOptions={categoryOptions} />
     </>
-  );
-}
-
-function RequestsPageSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between overflow-hidden">
-        <Skeleton className="h-7 w-36" />
-        <Skeleton className="h-8 w-36" />
-      </div>
-
-      <MyRequestListSkeleton />
-    </div>
   );
 }
