@@ -6,7 +6,8 @@ export function useGetPurchases(query: PurchaseListQuery) {
   return useQuery({
     queryKey: ["purchases", "list", query],
     queryFn: ({ signal }) => getPurchases(query, signal),
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
     placeholderData: keepPreviousData,
-    retry: false,
   });
 }

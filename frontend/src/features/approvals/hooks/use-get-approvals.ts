@@ -6,7 +6,8 @@ export function useGetApprovals(query: ApprovalListQuery) {
   return useQuery({
     queryKey: ["approvals", "list", query],
     queryFn: ({ signal }) => getApprovals(query, signal),
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
     placeholderData: keepPreviousData,
-    retry: false,
   });
 }
